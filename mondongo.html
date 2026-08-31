@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enquetes do Colégio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  // Decide o modo ANTES do body renderizar, pra não piscar a tela errada.
+  var __params = new URLSearchParams(location.search);
+  var __modo = __params.get('modo') === 'painel' ? 'painel' : 'formulario';
+  document.documentElement.setAttribute('data-modo', __modo);
+</script>
+<style>
+  :root{
+    --paper: #F5EFE2;
+    --paper-dim: #EDE4D0;
+    --ink: #241A12;
+    --ink-soft: #5B4E3F;
+    --mondongo: #A6321F;
+    --mondongo-dark: #7C2417;
+    --cinema: #1B2A4A;
+    --cinema-dark: #121D35;
+    --approve: #4B6B3A;
+    --reject: #A6321F;
+    --line: rgba(36,26,18,0.15);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-image: radial-gradient(circle at 1px 1px, rgba(36,26,18,0.06) 1px, transparent 0);
+    background-size: 22px 22px;
+    min-height:100vh;
+  }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:-0.01em; margin:0; }
+
+  /* Mode switching */
+  #app-formulario, #app-painel{ display:none; }
+  html[data-modo="formulario"] #app-formulario{ display:block; }
+  html[data-modo="painel"] #app-painel{ display:block; }
+
+  /* ============= FORM APP (mobile, via QR) ============= */
+  .f-wrap{ max-width: 460px; margin:0 auto; padding: 24px 18px 60px; }
+  .f-header{ text-align:center; padding-bottom:18px; border-bottom:2px solid var(--ink); margin-bottom:20px; }
+  .f-header h1{ font-size:26px; font-style:italic; }
+  .f-header p{ margin-top:6px; color:var(--ink-soft); font-size:13px; }
+
+  .f-tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .f-tab{ flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:'Fraunces',serif; font-weight:600; font-size:15px; padding:12px 6px;
+    border-radius:3px; cursor:pointer; }
+  .f-tab.active[data-target="mondongo"]{ background:var(--mondongo); color:#fff; border-color:var(--mondongo-dark); }
+  .f-tab.active[data-target="filmes"]{ background:var(--cinema); color:#fff; border-color:var(--cinema-dark); }
+
+  .f-panel{ display:none; }
+  .f-panel.active{ display:block; }
+  .accent-mondongo{ --accent:var(--mondongo); --accent-dark:var(--mondongo-dark); }
+  .accent-filmes{ --accent:var(--cinema); --accent-dark:var(--cinema-dark); }
+
+  .card{ background:#fff; border:1.5px solid var(--line); border-radius:6px; padding:22px;
+    box-shadow:4px 4px 0 rgba(36,26,18,0.08); }
+
+  .ticket-head{ display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:2px dashed var(--line); padding-bottom:12px; margin-bottom:18px; }
+  .ticket-head h2{ font-size:21px; color:var(--accent-dark); }
+  .ticket-head .tag{ font-size:11px; font-weight:600; color:#fff; background:var(--accent); padding:4px 10px; border-radius:999px; }
+
+  label{ display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin:14px 0 6px; }
+  label:first-of-type{ margin-top:0; }
+  select, input[type=text]{ width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif; font-size:15px; background:var(--paper); color:var(--ink); }
+  select:focus, input[type=text]:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  .radio-group{ display:flex; gap:10px; margin-top:4px; }
+  .radio-opt{ flex:1; border:1.5px solid var(--line); border-radius:4px; padding:12px; text-align:center;
+    cursor:pointer; font-weight:600; font-size:14px; user-select:none; }
+  .radio-opt.yes.checked{ background:var(--approve); color:#fff; border-color:var(--approve); }
+  .radio-opt.no.checked{ background:var(--reject); color:#fff; border-color:var(--reject); }
+
+  .nota-group{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .nota-opt{ flex:1 1 14%; min-width:36px; border:1.5px solid var(--line); border-radius:4px;
+    background:var(--paper); color:var(--ink); padding:9px 0; text-align:center; font-weight:600;
+    font-size:14px; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; }
+  .nota-opt.checked{ background:var(--accent); color:#fff; border-color:var(--accent-dark); }
+
+  .btn{ margin-top:20px; width:100%; padding:13px; border:none; border-radius:4px; background:var(--accent);
+    color:#fff; font-family:'Fraunces',serif; font-weight:600; font-size:16px; cursor:pointer; }
+  .btn:hover{ background:var(--accent-dark); }
+  .btn:disabled{ opacity:.6; }
+
+  .toast{ margin-top:14px; font-size:13px; font-weight:600; color:var(--approve); display:none; text-align:center; }
+  .toast.show{ display:block; }
+  .other-field{ display:none; margin-top:8px; }
+  .other-field.show{ display:block; }
+
+  /* ============= PAINEL APP (TV / projetor) ============= */
+  .p-wrap{ max-width: 1180px; margin:0 auto; padding:28px 24px 60px; }
+  .p-header{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;
+    border-bottom:2px solid var(--ink); padding-bottom:16px; margin-bottom:24px; }
+  .p-header h1{ font-size: clamp(26px,3.2vw,38px); font-style:italic; }
+  .p-header p{ margin-top:6px; color:var(--ink-soft); font-size:14px; }
+  .p-qr-box{ display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid var(--line);
+    border-radius:6px; padding:10px 16px; }
+  .p-qr-box img{ width:84px; height:84px; display:block; border-radius:3px; }
+  .p-qr-text{ font-size:12px; color:var(--ink-soft); max-width:150px; }
+  .p-qr-text strong{ display:block; color:var(--ink); font-family:'Fraunces',serif; font-size:14px; margin-bottom:2px; }
+
+  .p-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media (max-width: 900px){ .p-grid{ grid-template-columns:1fr; } }
+
+  .p-card{ background:#fff; border:1.5px solid var(--line); border-radius:6px; padding:26px;
+    box-shadow:5px 5px 0 rgba(36,26,18,0.08); }
+  .p-card.accent-mondongo{ --accent:var(--mondongo); --accent-dark:var(--mondongo-dark); }
+  .p-card.accent-filmes{ --accent:var(--cinema); --accent-dark:var(--cinema-dark); }
+  .p-card .ticket-head h2{ font-size:22px; }
+
+  .live-dot{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-soft); font-weight:600; }
+  .live-dot span.dot{ width:7px; height:7px; border-radius:50%; background:var(--approve); animation:pulse 1.8s infinite; }
+  @keyframes pulse{ 0%{opacity:1;} 50%{opacity:.3;} 100%{opacity:1;} }
+
+  .hero-stat{ display:flex; gap:16px; align-items:center; margin-bottom:20px; }
+  .hero-num{ font-family:'Fraunces',serif; font-size:46px; font-weight:700; color:var(--accent-dark); line-height:1; }
+  .hero-label{ color:var(--ink-soft); font-size:13px; max-width:220px; }
+
+  .bar-row{ margin-bottom:14px; }
+  .bar-row .row-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:5px; }
+  .bar-row .row-top .count{ color:var(--ink-soft); font-weight:400; }
+  .bar-track{ width:100%; height:16px; background:var(--paper-dim); border-radius:3px; overflow:hidden;
+    display:flex; border:1px solid var(--line); }
+  .bar-fill.approve{ background:var(--approve); }
+  .bar-fill.reject{ background:var(--reject); }
+  .bar-fill.rank{ background:var(--accent); border-radius:2px; }
+
+  .rank-row{ margin-bottom:12px; }
+  .rank-row .row-top{ display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
+  .rank-row .row-top .name{ font-weight:600; }
+  .rank-row .row-top .count{ color:var(--ink-soft); font-size:13px; }
+  .rank-num{ display:inline-block; width:20px; color:var(--accent); font-family:'Fraunces',serif; font-weight:700; }
+
+  .p-cols{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media (max-width:520px){ .p-cols{ grid-template-columns:1fr; } }
+
+  .empty{ text-align:center; padding:24px 10px; color:var(--ink-soft); font-size:14px; }
+  .p-total{ margin-top:16px; padding-top:12px; border-top:1px dashed var(--line); font-size:12px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<!-- ======================================================= -->
+<!-- MODO FORMULÁRIO — link para colocar no QR code           -->
+<!-- ======================================================= -->
+<div id="app-formulario">
+  <div class="f-wrap">
+    <div class="f-header">
+      <h1>Enquetes do Colégio</h1>
+      <p>Responda e veja sua turma no painel</p>
+    </div>
+
+    <div class="f-tabs">
+      <button class="f-tab active" data-target="mondongo">🍲 Mondongo</button>
+      <button class="f-tab" data-target="filmes">🎬 Filmes</button>
+    </div>
+
+    <div class="f-panel active accent-mondongo" id="panel-mondongo">
+      <div class="card">
+        <div class="ticket-head">
+          <h2>Aprovação do mondongo</h2>
+          <span class="tag">Turma vota</span>
+        </div>
+        <p style="color:var(--ink-soft); font-size:13px; margin-top:-6px;">O mondongo voltou ao cardápio da cantina. Sua turma aprovou?</p>
+
+        <label for="m-turma">Sua turma</label>
+        <select id="m-turma">
+          <option value="">Selecione a turma</option>
+          <option>6º Ano A</option><option>6º Ano B</option>
+          <option>7º Ano A</option><option>7º Ano B</option>
+          <option>8º Ano A</option><option>8º Ano B</option>
+          <option>9º Ano A</option><option>9º Ano B</option>
+          <option>1ª Série EM</option><option>2ª Série EM</option><option>3ª Série EM</option>
+          <option value="__outra">Outra turma</option>
+        </select>
+        <div class="other-field" id="m-turma-other-wrap">
+          <input type="text" id="m-turma-other" placeholder="Digite o nome da turma">
+        </div>
+
+        <label>Você gostou do mondongo?</label>
+        <div class="radio-group">
+          <div class="radio-opt yes" id="m-yes">Gostei</div>
+          <div class="radio-opt no" id="m-no">Não gostei</div>
+        </div>
+
+        <label>Nota para o mondongo (0 a 10)</label>
+        <div class="nota-group" id="m-nota-group">
+          <button type="button" class="nota-opt" data-val="0">0</button>
+          <button type="button" class="nota-opt" data-val="1">1</button>
+          <button type="button" class="nota-opt" data-val="2">2</button>
+          <button type="button" class="nota-opt" data-val="3">3</button>
+          <button type="button" class="nota-opt" data-val="4">4</button>
+          <button type="button" class="nota-opt" data-val="5">5</button>
+          <button type="button" class="nota-opt" data-val="6">6</button>
+          <button type="button" class="nota-opt" data-val="7">7</button>
+          <button type="button" class="nota-opt" data-val="8">8</button>
+          <button type="button" class="nota-opt" data-val="9">9</button>
+          <button type="button" class="nota-opt" data-val="10">10</button>
+        </div>
+
+        <button class="btn" id="m-submit">Enviar voto</button>
+        <div class="toast" id="m-toast">Voto registrado — obrigado!</div>
+      </div>
+    </div>
+
+    <div class="f-panel accent-filmes" id="panel-filmes">
+      <div class="card">
+        <div class="ticket-head">
+          <h2>Filme favorito</h2>
+          <span class="tag">Sessão colégio</span>
+        </div>
+        <p style="color:var(--ink-soft); font-size:13px; margin-top:-6px;">Conte qual filme e qual estilo você mais curte.</p>
+
+        <label for="f-filme">Nome do filme favorito</label>
+        <input type="text" id="f-filme" placeholder="Ex: Vingadores, Divertida Mente…">
+
+        <label for="f-estilo">Estilo favorito</label>
+        <select id="f-estilo">
+          <option value="">Selecione o estilo</option>
+          <option>Ação</option><option>Aventura</option><option>Comédia</option><option>Drama</option>
+          <option>Terror</option><option>Suspense</option><option>Ficção científica</option>
+          <option>Fantasia</option><option>Romance</option><option>Animação</option>
+          <option value="__outro">Outro</option>
+        </select>
+        <div class="other-field" id="f-estilo-other-wrap">
+          <input type="text" id="f-estilo-other" placeholder="Digite o estilo">
+        </div>
+
+        <button class="btn" id="f-submit">Enviar resposta</button>
+        <div class="toast" id="f-toast">Resposta registrada — obrigado!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- MODO PAINEL — link ...?modo=painel, pra deixar no telão  -->
+<!-- ======================================================= -->
+<div id="app-painel">
+  <div class="p-wrap">
+    <div class="p-header">
+      <div>
+        <h1>Painel de Resultados</h1>
+        <p>Enquetes do Colégio — atualização automática</p>
+      </div>
+      <div class="p-qr-box">
+        <img id="p-qr-img" alt="QR code para o formulário">
+        <div class="p-qr-text"><strong>Escaneie e responda</strong>aponta para este mesmo site, sem "?modo=painel"</div>
+      </div>
+    </div>
+
+    <div class="p-grid">
+      <div class="p-card accent-mondongo">
+        <div class="ticket-head">
+          <h2>Mondongo</h2>
+          <span class="live-dot"><span class="dot"></span>ao vivo</span>
+        </div>
+        <div id="m-dash-body"><p class="empty">Carregando resultados…</p></div>
+        <div class="p-total" id="m-total-label"></div>
+      </div>
+
+      <div class="p-card accent-filmes">
+        <div class="ticket-head">
+          <h2>Filmes</h2>
+          <span class="live-dot"><span class="dot"></span>ao vivo</span>
+        </div>
+        <div class="p-cols">
+          <div>
+            <h3 style="font-size:14px;color:var(--ink-soft);margin-bottom:10px;">Mais citados</h3>
+            <div id="f-dash-filmes"><p class="empty">Carregando…</p></div>
+          </div>
+          <div>
+            <h3 style="font-size:14px;color:var(--ink-soft);margin-bottom:10px;">Estilos favoritos</h3>
+            <div id="f-dash-estilos"><p class="empty">Carregando…</p></div>
+          </div>
+        </div>
+        <div class="p-total" id="f-total-label"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  // ==========================================================
+  // CONFIGURAÇÃO DO SUPABASE — cole aqui os dois valores do seu projeto
+  // (Project Settings → API → Project URL / anon public key)
+  // ==========================================================
+  const SUPABASE_URL = "SUBSTITUA_AQUI";
+  const SUPABASE_ANON_KEY = "SUBSTITUA_AQUI";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  var modo = document.documentElement.getAttribute('data-modo');
+
+  function escapeHtml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // =========================================================
+  // MODO FORMULÁRIO
+  // =========================================================
+  if(modo === 'formulario'){
+    var fTabs = document.querySelectorAll('.f-tab');
+    fTabs.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        fTabs.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.querySelectorAll('.f-panel').forEach(function(p){ p.classList.remove('active'); });
+        document.getElementById('panel-' + btn.dataset.target).classList.add('active');
+      });
+    });
+
+    var mTurmaSelect = document.getElementById('m-turma');
+    var mTurmaOtherWrap = document.getElementById('m-turma-other-wrap');
+    var mTurmaOther = document.getElementById('m-turma-other');
+    mTurmaSelect.addEventListener('change', function(){
+      mTurmaOtherWrap.classList.toggle('show', mTurmaSelect.value === '__outra');
+    });
+
+    var mAval = null;
+    var mYes = document.getElementById('m-yes');
+    var mNo = document.getElementById('m-no');
+    mYes.addEventListener('click', function(){ mAval='aprovou'; mYes.classList.add('checked'); mNo.classList.remove('checked'); });
+    mNo.addEventListener('click', function(){ mAval='reprovou'; mNo.classList.add('checked'); mYes.classList.remove('checked'); });
+
+    var mNota = null;
+    var mNotaBtns = document.querySelectorAll('#m-nota-group .nota-opt');
+    mNotaBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        mNota = parseInt(b.dataset.val, 10);
+        mNotaBtns.forEach(function(x){ x.classList.remove('checked'); });
+        b.classList.add('checked');
+      });
+    });
+
+    document.getElementById('m-submit').addEventListener('click', async function(){
+      var btn = document.getElementById('m-submit');
+      var turma = mTurmaSelect.value === '__outra' ? mTurmaOther.value.trim() : mTurmaSelect.value;
+      if(!turma){ alert('Selecione ou digite a turma.'); return; }
+      if(!mAval){ alert('Diga se você gostou ou não.'); return; }
+      if(mNota === null){ alert('Escolha uma nota de 0 a 10.'); return; }
+
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      var ok = true;
+      var { error } = await supabase.from('mondongo_respostas').insert({ turma: turma, avaliacao: mAval, nota: mNota });
+      if(error){ console.error('Erro ao gravar no Supabase', error); ok = false; }
+
+      btn.disabled = false; btn.textContent = 'Enviar voto';
+      var toast = document.getElementById('m-toast');
+      toast.textContent = ok ? 'Voto registrado — obrigado!' : 'Não foi possível registrar. Tente de novo.';
+      toast.classList.add('show');
+      setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+
+      if(ok){
+        mTurmaSelect.value=''; mTurmaOtherWrap.classList.remove('show'); mTurmaOther.value='';
+        mAval=null; mYes.classList.remove('checked'); mNo.classList.remove('checked');
+        mNota=null; mNotaBtns.forEach(function(x){ x.classList.remove('checked'); });
+      }
+    });
+
+    var fEstiloSelect = document.getElementById('f-estilo');
+    var fEstiloOtherWrap = document.getElementById('f-estilo-other-wrap');
+    var fEstiloOther = document.getElementById('f-estilo-other');
+    fEstiloSelect.addEventListener('change', function(){
+      fEstiloOtherWrap.classList.toggle('show', fEstiloSelect.value === '__outro');
+    });
+
+    function titleCase(str){
+      return str.split(' ').map(function(w){ return w.length ? w[0].toUpperCase()+w.slice(1) : w; }).join(' ');
+    }
+
+    document.getElementById('f-submit').addEventListener('click', async function(){
+      var btn = document.getElementById('f-submit');
+      var filmeRaw = document.getElementById('f-filme').value.trim();
+      var estilo = fEstiloSelect.value === '__outro' ? fEstiloOther.value.trim() : fEstiloSelect.value;
+      if(!filmeRaw){ alert('Digite o nome do filme.'); return; }
+      if(!estilo){ alert('Selecione ou digite o estilo.'); return; }
+
+      var filmeKey = filmeRaw.toLowerCase();
+      var filmeLabel = titleCase(filmeRaw);
+
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      var ok = true;
+      var { error } = await supabase.from('filmes_respostas').insert({
+        filme_chave: filmeKey,
+        filme_label: filmeLabel,
+        estilo: estilo
+      });
+      if(error){ console.error('Erro ao gravar no Supabase', error); ok = false; }
+
+      btn.disabled = false; btn.textContent = 'Enviar resposta';
+      var toast = document.getElementById('f-toast');
+      toast.textContent = ok ? 'Resposta registrada — obrigado!' : 'Não foi possível registrar. Tente de novo.';
+      toast.classList.add('show');
+      setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+
+      if(ok){
+        document.getElementById('f-filme').value='';
+        fEstiloSelect.value=''; fEstiloOtherWrap.classList.remove('show'); fEstiloOther.value='';
+      }
+    });
+  }
+
+  // =========================================================
+  // MODO PAINEL
+  // =========================================================
+  if(modo === 'painel'){
+    // QR code apontando pro mesmo arquivo, sem o parâmetro ?modo=painel
+    var formUrl = location.origin + location.pathname;
+    var qrImg = document.getElementById('p-qr-img');
+    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=' + encodeURIComponent(formUrl);
+
+    function renderMondongoDash(rows){
+      var body = document.getElementById('m-dash-body');
+      var turmas = {};
+      var total = { aprovou: 0, reprovou: 0 };
+      var notaSoma = 0, notaCount = 0;
+
+      rows.forEach(function(d){
+        if(d.avaliacao !== 'aprovou' && d.avaliacao !== 'reprovou') return;
+        if(!turmas[d.turma]) turmas[d.turma] = { aprovou:0, reprovou:0, notaSoma:0, notaCount:0 };
+        turmas[d.turma][d.avaliacao]++;
+        total[d.avaliacao]++;
+        if(typeof d.nota === 'number'){
+          turmas[d.turma].notaSoma += d.nota;
+          turmas[d.turma].notaCount++;
+          notaSoma += d.nota;
+          notaCount++;
+        }
+      });
+
+      var totalVotos = total.aprovou + total.reprovou;
+      document.getElementById('m-total-label').textContent = totalVotos + ' voto(s) no total';
+
+      if(totalVotos === 0){
+        body.innerHTML = '<p class="empty">Ainda não há votos. Assim que uma turma responder, aparece aqui.</p>';
+        return;
+      }
+
+      var overallRate = Math.round((total.aprovou / totalVotos) * 100);
+      var overallNota = notaCount ? (notaSoma / notaCount).toFixed(1) : '—';
+      var rows2 = Object.keys(turmas).map(function(t){
+        var d = turmas[t];
+        var tTotal = d.aprovou + d.reprovou;
+        var rate = tTotal ? Math.round((d.aprovou/tTotal)*100) : 0;
+        var nota = d.notaCount ? (d.notaSoma / d.notaCount).toFixed(1) : '—';
+        return { turma:t, rate:rate, total:tTotal, nota:nota };
+      }).sort(function(a,b){ return b.rate - a.rate; });
+
+      var html = '';
+      html += '<div class="hero-stat">';
+      html += '  <div><div class="hero-num">' + overallRate + '%</div><div class="hero-label">aprovação geral</div></div>';
+      html += '  <div><div class="hero-num">' + overallNota + '</div><div class="hero-label">nota média (0 a 10)</div></div>';
+      html += '</div>';
+
+      rows2.forEach(function(r){
+        html += '<div class="bar-row">';
+        html += '<div class="row-top"><span>' + escapeHtml(r.turma) + '</span><span>' + r.rate + '% · nota ' + r.nota + ' <span class="count">(' + r.total + ' voto' + (r.total!==1?'s':'') + ')</span></span></div>';
+        html += '<div class="bar-track"><div class="bar-fill approve" style="width:' + r.rate + '%"></div><div class="bar-fill reject" style="width:' + (100-r.rate) + '%"></div></div>';
+        html += '</div>';
+      });
+      body.innerHTML = html;
+    }
+
+    function renderFilmesDash(rows){
+      var filmesBody = document.getElementById('f-dash-filmes');
+      var estilosBody = document.getElementById('f-dash-estilos');
+      var filmes = {};
+      var estilos = {};
+
+      rows.forEach(function(d){
+        var chave = d.filme_chave || (d.filme_label || '').toLowerCase();
+        if(chave){
+          if(!filmes[chave]) filmes[chave] = { label: d.filme_label || chave, count: 0 };
+          filmes[chave].count++;
+        }
+        if(d.estilo) estilos[d.estilo] = (estilos[d.estilo] || 0) + 1;
+      });
+
+      var filmesArr = Object.values(filmes).sort(function(a,b){ return b.count - a.count; }).slice(0,8);
+      var estilosArr = Object.entries(estilos).sort(function(a,b){ return b[1]-a[1]; });
+      var totalRespostas = Object.values(filmes).reduce(function(s,f){ return s+f.count; }, 0);
+      document.getElementById('f-total-label').textContent = totalRespostas + ' resposta(s) no total';
+
+      if(filmesArr.length === 0){
+        filmesBody.innerHTML = '<p class="empty">Sem respostas ainda.</p>';
+        estilosBody.innerHTML = '<p class="empty">Sem respostas ainda.</p>';
+        return;
+      }
+
+      var maxFilme = filmesArr[0].count;
+      var fHtml = '';
+      filmesArr.forEach(function(f,i){
+        var pct = Math.max(6, Math.round((f.count/maxFilme)*100));
+        fHtml += '<div class="rank-row"><div class="row-top"><span class="name"><span class="rank-num">'+(i+1)+'</span>'+escapeHtml(f.label)+'</span><span class="count">'+f.count+'</span></div>';
+        fHtml += '<div class="bar-track"><div class="bar-fill rank" style="width:'+pct+'%"></div></div></div>';
+      });
+      filmesBody.innerHTML = fHtml;
+
+      var maxEstilo = estilosArr.length ? estilosArr[0][1] : 1;
+      var eHtml = '';
+      estilosArr.forEach(function(e,i){
+        var pct = Math.max(6, Math.round((e[1]/maxEstilo)*100));
+        eHtml += '<div class="rank-row"><div class="row-top"><span class="name"><span class="rank-num">'+(i+1)+'</span>'+escapeHtml(e[0])+'</span><span class="count">'+e[1]+'</span></div>';
+        eHtml += '<div class="bar-track"><div class="bar-fill rank" style="width:'+pct+'%"></div></div></div>';
+      });
+      estilosBody.innerHTML = eHtml;
+    }
+
+    async function loadMondongo(){
+      var { data, error } = await supabase.from('mondongo_respostas').select('turma, avaliacao, nota');
+      if(error){
+        console.error('Erro ao ler mondongo_respostas', error);
+        document.getElementById('m-dash-body').innerHTML = '<p class="empty">Não foi possível conectar ao banco. Confira a URL/chave e as policies no Supabase.</p>';
+        return;
+      }
+      renderMondongoDash(data);
+    }
+
+    async function loadFilmes(){
+      var { data, error } = await supabase.from('filmes_respostas').select('filme_chave, filme_label, estilo');
+      if(error){
+        console.error('Erro ao ler filmes_respostas', error);
+        document.getElementById('f-dash-filmes').innerHTML = '<p class="empty">Não foi possível conectar ao banco.</p>';
+        return;
+      }
+      renderFilmesDash(data);
+    }
+
+    loadMondongo();
+    loadFilmes();
+
+    // Realtime: qualquer INSERT nas tabelas recarrega o painel na hora
+    supabase
+      .channel('mondongo-respostas-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mondongo_respostas' }, loadMondongo)
+      .subscribe();
+
+    supabase
+      .channel('filmes-respostas-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'filmes_respostas' }, loadFilmes)
+      .subscribe();
+  }
+</script>
+</body>
+</html>
